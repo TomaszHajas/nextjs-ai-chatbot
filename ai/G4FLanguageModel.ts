@@ -20,13 +20,13 @@ export class G4FLanguageModel implements LanguageModelV1 {
   readonly provider = 'G4F';
   readonly supportsImageUrls = false;
 
-  readonly modelId: MistralChatModelId;
-  readonly settings: MistralChatSettings;
+  readonly modelId: G4FChatModelId;
+  readonly settings: G4FChatSettings;
 
   constructor(
-    modelId: MistralChatModelId,
-    settings: MistralChatSettings,
-    config: MistralChatConfig,
+    modelId: G4FChatModelId,
+    settings: G4FChatSettings,
+    config: G4FChatConfig,
   ) {
     this.modelId = modelId;
     this.settings = settings;
@@ -42,9 +42,9 @@ async doGenerate(
       url: `${this.config.baseURL}/chat/completions`,
       headers: combineHeaders(this.config.headers(), options.headers),
       body: args,
-      failedResponseHandler: mistralFailedResponseHandler,
+      failedResponseHandler: G4FFailedResponseHandler,
       successfulResponseHandler: createJsonResponseHandler(
-        mistralChatResponseSchema,
+        G4FChatResponseSchema,
       ),
       abortSignal: options.abortSignal,
       fetch: this.config.fetch,
@@ -54,7 +54,7 @@ async doGenerate(
     const choice = response.choices[0];
     let text = choice.message.content ?? undefined;
 
-    // when there is a trailing assistant message, mistral will send the
+    // when there is a trailing assistant message, G4F will send the
     // content of that message again. we skip this repeated content to
     // avoid duplication, e.g. in continuation mode.
     const lastMessage = rawPrompt[rawPrompt.length - 1];
@@ -67,6 +67,7 @@ async doGenerate(
 
 
     //TODO
+    /*
     const { G4F } = require("g4f");
     const g4f = new G4F();
     const messages = [
@@ -83,6 +84,7 @@ async doGenerate(
     	const text = await g4f.chatCompletion(messages, options);	
     	console.log(text);
     })();
+    */
 
     return {
       text,
@@ -92,7 +94,7 @@ async doGenerate(
         toolName: toolCall.function.name,
         args: toolCall.function.arguments!,
       })),
-      finishReason: mapMistralFinishReason(choice.finish_reason),
+      finishReason: mapG4FFinishReason(choice.finish_reason),
       usage: {
         promptTokens: response.usage.prompt_tokens,
         completionTokens: response.usage.completion_tokens,
