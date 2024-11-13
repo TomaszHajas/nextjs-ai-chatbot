@@ -1,4 +1,4 @@
-export { createG4F, G4F } from './mistral-provider';
+export { createG4F, G4F } from './G4F-provider';
 export type {
   G4FProvider,
   G4FProviderSettings,
