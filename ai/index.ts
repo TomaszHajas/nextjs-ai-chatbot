@@ -15,7 +15,8 @@ export const g4f = new G4F();
 const messages = [
     { role: "user", content: "Hi, what's up?"}
 ];
-//g4f.chatCompletion(messages).then(console.log);
+console.log("test");
+g4f.chatCompletion(messages).then(console.log);
 
 export const customModel = (apiIdentifier: string) => {
   return wrapLanguageModel({
