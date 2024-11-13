@@ -1,10 +1,17 @@
+export { createG4F, G4F } from './mistral-provider';
+export type {
+  G4FProvider,
+  G4FProviderSettings,
+} from './G4F-provider';
+
+//---
+
 import { openai } from '@ai-sdk/openai';
 const { G4F } = require("g4f");
 
 import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai';
 
 import { customMiddleware } from './custom-middleware';
-
 
 //--- TODO custom handler
 const { G4F } = require("g4f");
