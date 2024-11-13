@@ -14,6 +14,16 @@ import {
 } from '@ai-sdk/provider-utils';
 import { z } from 'zod';
 
+import { convertToG4FChatMessages } from './convert-to-G4F-chat-messages';
+import { mapG4FFinishReason } from './map-G4F-finish-reason';
+import {
+  G4FChatModelId,
+  G4FChatSettings,
+} from './G4F-chat-settings';
+import { G4FFailedResponseHandler } from './G4F-error';
+import { getResponseMetadata } from './get-response-metadata';
+import { prepareTools } from './G4F-prepare-tools';
+
 export class G4FLanguageModel implements LanguageModelV1 {
   readonly specificationVersion = 'v1';
   readonly defaultObjectGenerationMode = 'json';
