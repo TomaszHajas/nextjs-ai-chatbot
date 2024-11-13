@@ -13,37 +13,37 @@ import {
   postJsonToApi,
 } from '@ai-sdk/provider-utils';
 import { z } from 'zod';
-import { convertToMistralChatMessages } from './convert-to-mistral-chat-messages';
-import { mapMistralFinishReason } from './map-mistral-finish-reason';
+import { convertToG4FChatMessages } from './convert-to-G4F-chat-messages';
+import { mapG4FFinishReason } from './map-G4F-finish-reason';
 import {
-  MistralChatModelId,
-  MistralChatSettings,
-} from './mistral-chat-settings';
-import { mistralFailedResponseHandler } from './mistral-error';
+  G4FChatModelId,
+  G4FChatSettings,
+} from './G4F-chat-settings';
+import { G4FFailedResponseHandler } from './G4F-error';
 import { getResponseMetadata } from './get-response-metadata';
-import { prepareTools } from './mistral-prepare-tools';
+import { prepareTools } from './G4F-prepare-tools';
 
-type MistralChatConfig = {
+type G4FChatConfig = {
   provider: string;
   baseURL: string;
   headers: () => Record<string, string | undefined>;
   fetch?: FetchFunction;
 };
 
-export class MistralChatLanguageModel implements LanguageModelV1 {
+export class G4FChatLanguageModel implements LanguageModelV1 {
   readonly specificationVersion = 'v1';
   readonly defaultObjectGenerationMode = 'json';
   readonly supportsImageUrls = false;
 
-  readonly modelId: MistralChatModelId;
-  readonly settings: MistralChatSettings;
+  readonly modelId: G4FChatModelId;
+  readonly settings: G4FChatSettings;
 
-  private readonly config: MistralChatConfig;
+  private readonly config: G4FChatConfig;
 
   constructor(
-    modelId: MistralChatModelId,
-    settings: MistralChatSettings,
-    config: MistralChatConfig,
+    modelId: G4FChatModelId,
+    settings: G4FChatSettings,
+    config: G4FChatConfig,
   ) {
     this.modelId = modelId;
     this.settings = settings;
@@ -129,7 +129,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
         responseFormat?.type === 'json' ? { type: 'json_object' } : undefined,
 
       // messages:
-      messages: convertToMistralChatMessages(prompt),
+      messages: convertToG4FChatMessages(prompt),
     };
 
     switch (type) {
@@ -179,9 +179,9 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
       url: `${this.config.baseURL}/chat/completions`,
       headers: combineHeaders(this.config.headers(), options.headers),
       body: args,
-      failedResponseHandler: mistralFailedResponseHandler,
+      failedResponseHandler: G4FFailedResponseHandler,
       successfulResponseHandler: createJsonResponseHandler(
-        mistralChatResponseSchema,
+        G4FChatResponseSchema,
       ),
       abortSignal: options.abortSignal,
       fetch: this.config.fetch,
@@ -191,7 +191,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
     const choice = response.choices[0];
     let text = choice.message.content ?? undefined;
 
-    // when there is a trailing assistant message, mistral will send the
+    // when there is a trailing assistant message, G4F will send the
     // content of that message again. we skip this repeated content to
     // avoid duplication, e.g. in continuation mode.
     const lastMessage = rawPrompt[rawPrompt.length - 1];
@@ -210,7 +210,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
         toolName: toolCall.function.name,
         args: toolCall.function.arguments!,
       })),
-      finishReason: mapMistralFinishReason(choice.finish_reason),
+      finishReason: mapG4FFinishReason(choice.finish_reason),
       usage: {
         promptTokens: response.usage.prompt_tokens,
         completionTokens: response.usage.completion_tokens,
@@ -234,9 +234,9 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
       url: `${this.config.baseURL}/chat/completions`,
       headers: combineHeaders(this.config.headers(), options.headers),
       body,
-      failedResponseHandler: mistralFailedResponseHandler,
+      failedResponseHandler: G4FFailedResponseHandler,
       successfulResponseHandler: createEventSourceResponseHandler(
-        mistralChatChunkSchema,
+        G4FChatChunkSchema,
       ),
       abortSignal: options.abortSignal,
       fetch: this.config.fetch,
@@ -255,7 +255,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
     return {
       stream: response.pipeThrough(
         new TransformStream<
-          ParseResult<z.infer<typeof mistralChatChunkSchema>>,
+          ParseResult<z.infer<typeof G4FChatChunkSchema>>,
           LanguageModelV1StreamPart
         >({
           transform(chunk, controller) {
@@ -285,7 +285,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
             const choice = value.choices[0];
 
             if (choice?.finish_reason != null) {
-              finishReason = mapMistralFinishReason(choice.finish_reason);
+              finishReason = mapG4FFinishReason(choice.finish_reason);
             }
 
             if (choice?.delta == null) {
@@ -294,7 +294,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
 
             const delta = choice.delta;
 
-            // when there is a trailing assistant message, mistral will send the
+            // when there is a trailing assistant message, G4F will send the
             // content of that message again. we skip this repeated content to
             // avoid duplication, e.g. in continuation mode.
             if (chunkNumber <= 2) {
@@ -304,7 +304,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
                 lastMessage.role === 'assistant' &&
                 delta.content === lastMessage.content.trimEnd()
               ) {
-                // Mistral moves the trailing space from the prefix to the next chunk.
+                // G4F moves the trailing space from the prefix to the next chunk.
                 // We trim the leading space to avoid duplication.
                 if (delta.content.length < lastMessage.content.length) {
                   trimLeadingSpace = true;
@@ -328,7 +328,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
 
             if (delta.tool_calls != null) {
               for (const toolCall of delta.tool_calls) {
-                // mistral tool calls come in one piece:
+                // G4F tool calls come in one piece:
                 controller.enqueue({
                   type: 'tool-call-delta',
                   toolCallType: 'function',
@@ -362,7 +362,7 @@ export class MistralChatLanguageModel implements LanguageModelV1 {
 
 // limited version of the schema, focussed on what is needed for the implementation
 // this approach limits breakages when the API changes and increases efficiency
-const mistralChatResponseSchema = z.object({
+const G4FChatResponseSchema = z.object({
   id: z.string().nullish(),
   created: z.number().nullish(),
   model: z.string().nullish(),
@@ -393,7 +393,7 @@ const mistralChatResponseSchema = z.object({
 
 // limited version of the schema, focussed on what is needed for the implementation
 // this approach limits breakages when the API changes and increases efficiency
-const mistralChatChunkSchema = z.object({
+const G4FChatChunkSchema = z.object({
   id: z.string().nullish(),
   created: z.number().nullish(),
   model: z.string().nullish(),
