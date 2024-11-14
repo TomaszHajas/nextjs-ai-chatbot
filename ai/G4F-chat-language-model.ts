@@ -260,7 +260,6 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     options: Parameters<LanguageModelV1['doStream']>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1['doStream']>>> {
     const { args, warnings } = this.getArgs(options);
-    const g4f = new G4F(); // Step 1: Create an instance of G4F
     const messages = convertToG4FChatMessages(args.messages); // Step 2: Prepare messages for G4F
   
     const streamOptions = {
