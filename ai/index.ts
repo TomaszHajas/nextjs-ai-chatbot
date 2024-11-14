@@ -14,6 +14,7 @@ import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai';
 import { customMiddleware } from './custom-middleware';
 
 //--- TODO custom handler
+/*
 const { G4F } = require("g4f");
 const g4f = new G4F();
 const messages = [
@@ -40,6 +41,8 @@ console.log("TEST");
     const text = await g4f.chatCompletion(messages, options);	
     console.log(text);
 })();
+
+*/
 
 //---
 export const customModel = (apiIdentifier: string) => {
