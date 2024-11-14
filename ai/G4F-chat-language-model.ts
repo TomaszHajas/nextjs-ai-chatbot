@@ -1,3 +1,5 @@
+const { G4F, chunkProcessor } = require("g4f");
+const g4f = new G4F();
 import {
   LanguageModelV1,
   LanguageModelV1CallWarning,
@@ -175,6 +177,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
   ): Promise<Awaited<ReturnType<LanguageModelV1['doGenerate']>>> {
     const { args, warnings } = this.getArgs(options);
 
+    /*
     const { responseHeaders, value: response } = await postJsonToApi({
       url: `${this.config.baseURL}/chat/completions`,
       headers: combineHeaders(this.config.headers(), options.headers),
@@ -186,10 +189,38 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
       abortSignal: options.abortSignal,
       fetch: this.config.fetch,
     });
+    */
 
+    const { G4F } = require("g4f");
+    const g4f = new G4F();
+    const messages = [
+        { role: "system", content: "You're an expert bot in poetry."},
+        { role: "user", content: "Let's see, write a single paragraph-long poem for me." },
+    ];
+    const options = {
+        model: "gpt-4",
+        debug: true,
+    	retry: {
+            times: 3,
+            condition: (text) => {
+                const words = text.split(" ");
+                return words.length > 10;
+            }
+        },
+        output: (text) => {
+            return text + " 💕🌹";
+        }
+    };
+    
+    console.log("TEST1");
+    let text = await g4f.chatCompletion(messages, options);	
+    console.log(text);
+
+    /*
     const { messages: rawPrompt, ...rawSettings } = args;
     const choice = response.choices[0];
     let text = choice.message.content ?? undefined;
+    */
 
     // when there is a trailing assistant message, G4F will send the
     // content of that message again. we skip this repeated content to
@@ -204,12 +235,14 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
 
     return {
       text,
+      /*
       toolCalls: choice.message.tool_calls?.map(toolCall => ({
         toolCallType: 'function',
         toolCallId: toolCall.id,
         toolName: toolCall.function.name,
         args: toolCall.function.arguments!,
       })),
+      */
       finishReason: mapG4FFinishReason(choice.finish_reason),
       usage: {
         promptTokens: response.usage.prompt_tokens,
@@ -227,94 +260,66 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     options: Parameters<LanguageModelV1['doStream']>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1['doStream']>>> {
     const { args, warnings } = this.getArgs(options);
-
-    const body = { ...args, stream: true };
-
-    const { responseHeaders, value: response } = await postJsonToApi({
-      url: `${this.config.baseURL}/chat/completions`,
-      headers: combineHeaders(this.config.headers(), options.headers),
-      body,
-      failedResponseHandler: G4FFailedResponseHandler,
-      successfulResponseHandler: createEventSourceResponseHandler(
-        G4FChatChunkSchema,
-      ),
-      abortSignal: options.abortSignal,
-      fetch: this.config.fetch,
-    });
-
+    const g4f = new G4F(); // Step 1: Create an instance of G4F
+    const messages = convertToG4FChatMessages(args.messages); // Step 2: Prepare messages for G4F
+  
+    const streamOptions = {
+      provider: g4f.providers.ChatBase,
+      stream: true, // Step 3: Enable streaming
+    };
+  
+    // Step 4: Call G4F API
+    const response = await g4f.chatCompletion(messages, streamOptions);
     const { messages: rawPrompt, ...rawSettings } = args;
-
+  
     let finishReason: LanguageModelV1FinishReason = 'unknown';
     let usage: { promptTokens: number; completionTokens: number } = {
       promptTokens: Number.NaN,
       completionTokens: Number.NaN,
     };
+  
     let chunkNumber = 0;
     let trimLeadingSpace = false;
-
+  
     return {
-      stream: response.pipeThrough(
+      stream: chunkProcessor(response).pipeThrough( // Step 5: Process the response chunks
         new TransformStream<
-          ParseResult<z.infer<typeof G4FChatChunkSchema>>,
+          string,
           LanguageModelV1StreamPart
         >({
           transform(chunk, controller) {
-            if (!chunk.success) {
-              controller.enqueue({ type: 'error', error: chunk.error });
-              return;
-            }
-
             chunkNumber++;
-
-            const value = chunk.value;
-
+  
             if (chunkNumber === 1) {
+              // First chunk can have important metadata if needed
               controller.enqueue({
                 type: 'response-metadata',
-                ...getResponseMetadata(value),
+                // You may wish to extract metadata from the first chunk
               });
             }
-
-            if (value.usage != null) {
-              usage = {
-                promptTokens: value.usage.prompt_tokens,
-                completionTokens: value.usage.completion_tokens,
-              };
-            }
-
-            const choice = value.choices[0];
-
-            if (choice?.finish_reason != null) {
-              finishReason = mapG4FFinishReason(choice.finish_reason);
-            }
-
+  
+            const choice = { delta: { content: chunk } }; // Assuming chunk is the text content.
+  
             if (choice?.delta == null) {
               return;
             }
-
+  
             const delta = choice.delta;
-
-            // when there is a trailing assistant message, G4F will send the
-            // content of that message again. we skip this repeated content to
-            // avoid duplication, e.g. in continuation mode.
+  
             if (chunkNumber <= 2) {
               const lastMessage = rawPrompt[rawPrompt.length - 1];
-
+  
               if (
                 lastMessage.role === 'assistant' &&
                 delta.content === lastMessage.content.trimEnd()
               ) {
-                // G4F moves the trailing space from the prefix to the next chunk.
-                // We trim the leading space to avoid duplication.
                 if (delta.content.length < lastMessage.content.length) {
                   trimLeadingSpace = true;
                 }
-
-                // skip the repeated content:
-                return;
+                return; // Skip repeated content
               }
             }
-
+  
             if (delta.content != null) {
               controller.enqueue({
                 type: 'text-delta',
@@ -322,20 +327,14 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
                   ? delta.content.trimStart()
                   : delta.content,
               });
-
+  
               trimLeadingSpace = false;
             }
-
+  
+            // Handle any tool calls if provided
             if (delta.tool_calls != null) {
               for (const toolCall of delta.tool_calls) {
-                // G4F tool calls come in one piece:
-                controller.enqueue({
-                  type: 'tool-call-delta',
-                  toolCallType: 'function',
-                  toolCallId: toolCall.id,
-                  toolName: toolCall.function.name,
-                  argsTextDelta: toolCall.function.arguments,
-                });
+                // G4F tool calls handling
                 controller.enqueue({
                   type: 'tool-call',
                   toolCallType: 'function',
@@ -346,15 +345,15 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
               }
             }
           },
-
+  
           flush(controller) {
             controller.enqueue({ type: 'finish', finishReason, usage });
           },
         }),
       ),
       rawCall: { rawPrompt, rawSettings },
-      rawResponse: { headers: responseHeaders },
-      request: { body: JSON.stringify(body) },
+      rawResponse: { headers: { /* You may set headers as per requirements */ } },
+      request: { body: JSON.stringify(args) },
       warnings,
     };
   }
