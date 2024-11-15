@@ -244,7 +244,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
         args: toolCall.function.arguments!,
       })),
       */
-      finishReason: mapG4FFinishReason(choice.finish_reason),
+      finishReason: mapG4FFinishReason('unknown'),
       usage: {
         promptTokens: response.usage.prompt_tokens,
         completionTokens: response.usage.completion_tokens,
@@ -346,7 +346,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
           },
   
           flush(controller) {
-            controller.enqueue({ type: 'finish', finishReason, usage });
+            controller.enqueue({ type: 'finish', 'unknown', usage });
           },
         }),
       ),
