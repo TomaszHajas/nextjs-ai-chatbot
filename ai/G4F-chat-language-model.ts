@@ -270,7 +270,6 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
   
     // Step 4: Call G4F API
     const response = await g4f.chatCompletion(messages, streamOptions);
-    const { messages: messages, ...rawSettings } = args;
   
     let finishReason: LanguageModelV1FinishReason = 'unknown';
     let usage: { promptTokens: number; completionTokens: number } = {
