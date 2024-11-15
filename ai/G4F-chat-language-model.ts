@@ -203,12 +203,12 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
         debug: true,
     	retry: {
             times: 3,
-            condition: (text) => {
+            condition: (text: string) => {
                 const words = text.split(" ");
                 return words.length > 10;
             }
         },
-        output: (text) => {
+        output: (text: string) => {
             return text + " 💕🌹";
         }
     };
