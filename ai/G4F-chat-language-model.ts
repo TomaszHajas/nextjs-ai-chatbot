@@ -226,7 +226,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     // when there is a trailing assistant message, G4F will send the
     // content of that message again. we skip this repeated content to
     // avoid duplication, e.g. in continuation mode.
-    const lastMessage = rawPrompt[rawPrompt.length - 1];
+    const lastMessage = messages[messages.length - 1];
     if (
       lastMessage.role === 'assistant' &&
       text?.startsWith(lastMessage.content)
@@ -249,7 +249,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
         promptTokens: response.usage.prompt_tokens,
         completionTokens: response.usage.completion_tokens,
       },
-      rawCall: { rawPrompt, rawSettings },
+      rawCall: { messages, rawSettings },
       rawResponse: { headers: responseHeaders },
       request: { body: JSON.stringify(args) },
       response: getResponseMetadata(response),
@@ -270,7 +270,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
   
     // Step 4: Call G4F API
     const response = await g4f.chatCompletion(messages, streamOptions);
-    const { messages: rawPrompt, ...rawSettings } = args;
+    const { messages: messages, ...rawSettings } = args;
   
     let finishReason: LanguageModelV1FinishReason = 'unknown';
     let usage: { promptTokens: number; completionTokens: number } = {
@@ -307,7 +307,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
             const delta = choice.delta;
   
             if (chunkNumber <= 2) {
-              const lastMessage = rawPrompt[rawPrompt.length - 1];
+              const lastMessage = messages[messages.length - 1];
   
               if (
                 lastMessage.role === 'assistant' &&
@@ -351,7 +351,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
           },
         }),
       ),
-      rawCall: { rawPrompt, rawSettings },
+      rawCall: { messages, rawSettings },
       rawResponse: { headers: { /* You may set headers as per requirements */ } },
       request: { body: JSON.stringify(args) },
       warnings,
