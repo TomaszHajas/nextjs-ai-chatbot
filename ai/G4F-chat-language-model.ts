@@ -198,7 +198,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
         { role: "system", content: "You're an expert bot in poetry."},
         { role: "user", content: "Let's see, write a single paragraph-long poem for me." },
     ];
-    const options = {
+    const chatOptions = {
         model: "gpt-4",
         debug: true,
     	retry: {
@@ -214,7 +214,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     };
     
     console.log("TEST1");
-    let text = await g4f.chatCompletion(messages, options);	
+    let text = await g4f.chatCompletion(messages, chatOptions);	
     console.log(text);
 
     /*
