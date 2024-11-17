@@ -346,7 +346,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
           },
   
           flush(controller) {
-            controller.enqueue({ type: 'finish', 'unknown', usage });
+            controller.enqueue({ type: 'finish', finishReason, usage });
           },
         }),
       ),
