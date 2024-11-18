@@ -249,7 +249,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
         promptTokens: Number.NaN, //response.usage.prompt_tokens,
         completionTokens: Number.NaN, //response.usage.completion_tokens,
       },
-      rawCall: { messages, rawSettings },
+      rawCall: { rawSettings },
       rawResponse: { headers: responseHeaders },
       request: { body: JSON.stringify(args) },
       response: getResponseMetadata(response),
