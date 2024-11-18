@@ -246,8 +246,8 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
       */
       finishReason: mapG4FFinishReason('unknown'),
       usage: {
-        promptTokens: response.usage.prompt_tokens,
-        completionTokens: response.usage.completion_tokens,
+        promptTokens: Number.NaN, //response.usage.prompt_tokens,
+        completionTokens: Number.NaN, //response.usage.completion_tokens,
       },
       rawCall: { messages, rawSettings },
       rawResponse: { headers: responseHeaders },
