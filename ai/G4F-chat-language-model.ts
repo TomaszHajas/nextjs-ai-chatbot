@@ -202,7 +202,7 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
 
     const rawPrompt = messages;
 
-    //const { messages: rawPrompt, ...rawSettings } = args;
+    const { messages: rawPromptXXX, ...rawSettings } = args;
     
     const chatOptions = {
         model: "gpt-4",
@@ -269,6 +269,8 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     const messages = convertToG4FChatMessages(args.messages); // Step 2: Prepare messages for G4F
 
     const rawPrompt = messages;
+
+    const { messages: rawPromptXXX, ...rawSettings } = args;
   
     const streamOptions = {
       provider: g4f.providers.ChatBase,
