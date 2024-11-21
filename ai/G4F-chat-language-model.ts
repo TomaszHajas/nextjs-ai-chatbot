@@ -194,14 +194,15 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     const { G4F } = require("g4f");
     const g4f = new G4F();
     */
-    /*
+
     const messages = [
         { role: "system", content: "You're an expert bot in poetry."},
         { role: "user", content: "Let's see, write a single paragraph-long poem for me." },
     ];
-    */
 
-    const { messages: rawPrompt, ...rawSettings } = args;
+    const rawPrompt = messages;
+
+    //const { messages: rawPrompt, ...rawSettings } = args;
     
     const chatOptions = {
         model: "gpt-4",
@@ -265,9 +266,9 @@ export class G4FChatLanguageModel implements LanguageModelV1 {
     options: Parameters<LanguageModelV1['doStream']>[0],
   ): Promise<Awaited<ReturnType<LanguageModelV1['doStream']>>> {
     const { args, warnings } = this.getArgs(options);
-    //const messages = convertToG4FChatMessages(args.messages); // Step 2: Prepare messages for G4F
+    const messages = convertToG4FChatMessages(args.messages); // Step 2: Prepare messages for G4F
 
-    const { messages: rawPrompt, ...rawSettings } = args;
+    const rawPrompt = messages;
   
     const streamOptions = {
       provider: g4f.providers.ChatBase,
